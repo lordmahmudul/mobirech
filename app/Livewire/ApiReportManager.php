@@ -8,6 +8,7 @@ use App\Models\ApiProvider;
 use App\Models\ApiProviderDailyReport;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
+use Carbon\Carbon;
 
 #[Layout('layouts.app')]
 class ApiReportManager extends Component
@@ -17,11 +18,82 @@ class ApiReportManager extends Component
     public $report_id, $api_provider_id, $report_date, $balance_added, $balance_used, $available_balance;
     public $isModalOpen = false;
 
-    public function render()
+    // Filters
+    public $dateFilter = 'yesterday'; // Default
+    public $filterProvider;
+
+   public function render()
     {
+        // 1. Base Query
+        $query = ApiProviderDailyReport::with('provider')->orderBy('report_date', 'desc');
+
+        // 2. Define Strict Date Boundaries
+        $startDate = null;
+        $endDate = null;
+        
+        switch ($this->dateFilter) {
+            case 'today':
+                $startDate = Carbon::today();
+                $endDate = Carbon::today();
+                $query->whereDate('report_date', Carbon::today());
+                break;
+            case 'yesterday':
+                $startDate = Carbon::yesterday();
+                $endDate = Carbon::yesterday();
+                $query->whereDate('report_date', Carbon::yesterday());
+                break;
+            case 'this_week':
+                $startDate = Carbon::now()->startOfWeek();
+                $endDate = Carbon::now()->endOfWeek();
+                $query->whereBetween('report_date', [$startDate, $endDate]);
+                break;
+            case 'last_month':
+                $startDate = Carbon::now()->subMonth()->startOfMonth();
+                $endDate = Carbon::now()->subMonth()->endOfMonth();
+                $query->whereBetween('report_date', [$startDate, $endDate]);
+                break;
+            case 'all':
+                // No strict boundaries for "All Time"
+                break;
+        }
+
+        // 3. Provider Filter
+        if ($this->filterProvider) {
+            $query->where('api_provider_id', $this->filterProvider);
+        }
+
+        // 4. Calculate Totals (Strictly within the range)
+        $totalAdded = (clone $query)->sum('balance_added');
+        $totalUsed = (clone $query)->sum('balance_used');
+
+        $totalAvailable = 0;
+        $providerIds = $this->filterProvider ? [$this->filterProvider] : ApiProvider::pluck('id')->toArray();
+
+        foreach ($providerIds as $id) {
+            // Start building the query for this provider
+            $balanceQuery = ApiProviderDailyReport::where('api_provider_id', $id);
+
+            // Apply Strict Date Filters
+            if ($this->dateFilter !== 'all' && $startDate && $endDate) {
+                $balanceQuery->whereBetween('report_date', [$startDate, $endDate]);
+            } else {
+                // For "All", just get the latest record available up to now
+                $balanceQuery->where('report_date', '<=', Carbon::now());
+            }
+
+            // Get the latest record STRICTLY within the boundaries
+            $latestBalance = $balanceQuery->orderBy('report_date', 'desc')
+                                          ->value('available_balance');
+            
+            $totalAvailable += ($latestBalance ?? 0);
+        }
+
         return view('livewire.api-report-manager', [
-            'reports' => ApiProviderDailyReport::with('provider')->latest('report_date')->paginate(10),
+            'reports' => $query->paginate(10),
             'providers' => ApiProvider::all(),
+            'totalAdded' => $totalAdded,
+            'totalUsed' => $totalUsed,
+            'totalAvailable' => $totalAvailable,
         ]);
     }
 
@@ -46,7 +118,7 @@ class ApiReportManager extends Component
     {
         $this->report_id = null;
         $this->api_provider_id = '';
-        $this->report_date = '';
+        $this->report_date = Carbon::yesterday()->format('Y-m-d');
         $this->balance_added = '';
         $this->balance_used = '';
         $this->available_balance = '';
@@ -62,6 +134,7 @@ class ApiReportManager extends Component
             'report_date' => [
                 'required', 
                 'date',
+                'before_or_equal:today',
                 Rule::unique('api_provider_daily_reports')->where(function ($query) {
                     return $query->where('api_provider_id', $this->api_provider_id);
                 })->ignore($this->report_id)

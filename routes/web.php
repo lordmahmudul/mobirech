@@ -28,5 +28,6 @@ Route::middleware([
     Route::get('/gateway-reports', GatewayReportManager::class)->name('gateway-reports');
     Route::get('/expense-categories', ExpenseCategoryManager::class)->name('expense-categories');
     Route::get('/expenses', ExpenseManager::class)->name('expenses');
+    Route::get('/api-recharge-stats', App\Livewire\ApiRechargeStatManager::class)->name('api-recharge-stats');
 
 });

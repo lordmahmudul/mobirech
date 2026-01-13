@@ -20,18 +20,28 @@
             <aside class="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col">
 
     <!-- Logo -->
-    <div class="h-16 flex items-center px-6 border-b">
-        <a href="{{ route('dashboard') }}" class="text-lg font-bold text-indigo-600">
-            {{ config('app.name') }}
-        </a>
-    </div>
+    <div class="flex p-6 items-center">
+                <!-- Logo -->
+                <div class="shrink-0 flex items-center">
+                    <a href="{{ route('dashboard') }}">
+                        <x-application-mark class="block h-9 w-auto" />
+                    </a>
+                </div>
+
+                <!-- Navigation Links -->
+                <div class="hidden space-x-4 sm:-my-px sm:ms-10 sm:flex">
+                    <x-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
+                        {{ config('app.name') }}
+                    </x-nav-link>
+                </div>
+            </div>
 
     <!-- Navigation -->
     <nav class="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
 
-        <x-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
+        <x-side-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
             Dashboard
-        </x-nav-link>
+        </x-side-link>
 
         <!-- Banking -->
         <div>
@@ -55,11 +65,15 @@
             </p>
 
             <x-side-link href="{{ route('api-providers') }}" :active="request()->routeIs('api-providers')">
-                Providers List
+                API Providers List
             </x-side-link>
 
             <x-side-link href="{{ route('api-reports') }}" :active="request()->routeIs('api-reports')">
-                Daily Reports
+             Daily API Reports
+            </x-side-link>
+
+            <x-side-link href="{{ route('api-recharge-stats') }}" :active="request()->routeIs('api-recharge-stats')">
+                Daily Recharge Stats
             </x-side-link>
         </div>
 

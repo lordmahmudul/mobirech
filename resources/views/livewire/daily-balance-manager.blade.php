@@ -4,8 +4,13 @@
     </h2>
 </x-slot>
 
+
 <div class="py-12">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="bg-white flex justify-between items-center overflow-hidden shadow-xl sm:rounded-lg p-6 mb-6">
+            <p class="text-xl text-gray-600">{{ __('Total Bank Balances') }}</p>
+            <p class="text-xl font-bold">{{ number_format($totalAmount, 2) }}</p>
+        </div>
         <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
             
             @if (session()->has('message'))
@@ -14,11 +19,26 @@
                 </div>
             @endif
 
-            <div class="mb-4">
+            <div class="mb-4 flex justify-between items-center">
                 <x-button wire:click="create">
                     {{ __('Add New Balance Record') }}
                 </x-button>
+                <div>
+                <select wire:model.live="filterBank" class="border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                        <option value="">All Banks</option>
+                        @foreach($banks as $bank)
+                            <option value="{{ $bank->id }}">{{ $bank->bank_name }}</option>
+                        @endforeach
+                    </select>
+                    <select wire:model.live="dateFilter" class="border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="this_week">This Week</option>
+                        <option value="last_month">Last Month</option>
+                        <option value="all">All History</option>
+                    </select>
             </div>
+        </div>
 
             <table class="table-fixed w-full">
                 <thead>
