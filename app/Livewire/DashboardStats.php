@@ -8,6 +8,7 @@ use App\Models\ApiProvider;
 use App\Models\GatewayProvider;
 use App\Models\GatewayDailyReport;
 use App\Models\Expense;
+use App\Models\ApiRechargeStat;
 use Carbon\Carbon;
 
 class DashboardStats extends Component
@@ -16,6 +17,10 @@ class DashboardStats extends Component
     public $totalApiBalance = 0;
     public $totalUnsettled = 0;
     public $monthlyExpenses = 0;
+    public $rechargeStats = [];
+    public $totalRechargeApiAmt = 0;
+    public $totalRechargeDbAmt = 0;
+    public $totalRechargeDiffAmt = 0;
     
     public $dateFilter = 'yesterday'; 
     public $customStartDate;
@@ -128,6 +133,20 @@ class DashboardStats extends Component
         // ---------------------------------------------------------
         $this->monthlyExpenses = Expense::whereBetween('expense_date', [$startDate, $endDate])
                                 ->sum('amount');
+        
+        // ---------------------------------------------------------
+        // 5. NEW: Recharge Reconciliation Stats (Strict Range Sum)
+        // ---------------------------------------------------------
+        // We get the list so we can show the table in the view
+        $this->rechargeStats = ApiRechargeStat::with('provider')
+                                ->whereBetween('report_date', [$startDate, $endDate])
+                                ->orderBy('report_date', 'desc')
+                                ->get();
+
+        // Calculate Totals for Summary
+        $this->totalRechargeApiAmt = $this->rechargeStats->sum('api_success_amount');
+        $this->totalRechargeDbAmt = $this->rechargeStats->sum('db_success_amount');
+        $this->totalRechargeDiffAmt = $this->totalRechargeApiAmt - $this->totalRechargeDbAmt;
     }
 
     public function render()

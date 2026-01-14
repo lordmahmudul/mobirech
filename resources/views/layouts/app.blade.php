@@ -17,7 +17,7 @@
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100 flex">
             
-            <aside class="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col">
+<aside class="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col">
 
     <!-- Logo -->
     <div class="flex p-6 items-center">
@@ -110,7 +110,6 @@
     </nav>
 </aside>
 
-
             <div class="flex-1 flex flex-col">
                 
                 @livewire('navigation-menu')
@@ -123,7 +122,7 @@
                     </header>
                 @endif
 
-                <main class="flex-1 p-6">
+                <main class="flex-1 ">
                     {{ $slot }}
                 </main>
             </div>

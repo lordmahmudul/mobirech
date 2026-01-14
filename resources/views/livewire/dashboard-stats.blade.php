@@ -95,18 +95,90 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <div class="bg-white p-6 rounded-lg shadow-md">
             <h3 class="text-lg font-bold text-gray-700 mb-4">Total Liquid Assets</h3>
-            <p class="text-gray-500 text-sm mb-2">Cash available right now (Bank + API Wallets)</p>
+            <p class="text-gray-500 text-sm mb-2">Cash available right now (Bank + API Wallets + Pending Settlements)</p>
             <p class="text-4xl font-extrabold text-green-600">
-                {{ number_format($totalBankBalance + $totalApiBalance, 2) }}
+                {{ number_format($totalBankBalance + $totalApiBalance + $totalUnsettled, 2) }}
             </p>
         </div>
         
         <div class="bg-white p-6 rounded-lg shadow-md">
             <h3 class="text-lg font-bold text-gray-700 mb-4">Net Position (Est.)</h3>
-            <p class="text-gray-500 text-sm mb-2">Liquid Assets + Pending Settlements - Expenses</p>
+            <p class="text-gray-500 text-sm mb-2">Liquid Assets - Expenses</p>
             <p class="text-4xl font-extrabold text-gray-800">
                 {{ number_format(($totalBankBalance + $totalApiBalance + $totalUnsettled) - $monthlyExpenses, 2) }}
             </p>
+        </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-700">Success Recharge Report (API vs DB)</h3>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="table-auto w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-100 uppercase text-xs leading-normal text-gray-600">
+                        <th class="border px-4 py-3 text-left">Date</th>
+                        <th class="border px-4 py-3 text-left">Provider</th>
+                        <th class="border px-4 py-3 text-right bg-green-50">API Success</th>
+                        <th class="border px-4 py-3 text-right bg-blue-50">DB Success</th>
+                        <th class="border px-4 py-3 text-right bg-red-50 font-bold ">Success Difference</th>
+                        <th class="border px-4 py-3 text-right">API Count</th>
+                        <th class="border px-4 py-3 text-right">DB Count</th>
+                        <th class="border px-4 py-3 text-right font-bold ">Count Difference</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-700 text-sm">
+                    @forelse($rechargeStats as $stat)
+                    @php
+                        $diffAmt = $stat->api_success_amount - $stat->db_success_amount;
+                        $diffCnt = $stat->api_success_count - $stat->db_success_count;
+                        // Highlight row if there is a difference
+                        $rowClass = ($diffAmt != 0 || $diffCnt != 0) ? 'bg-red-50' : 'hover:bg-gray-50 border-b';
+                    @endphp
+                    <tr class="{{ $rowClass }}">
+                        <td class="border px-4 py-3">{{ $stat->report_date->format('d M, Y') }}</td>
+                        <td class="border px-4 py-3 font-medium">{{ $stat->provider->provider_name }}</td>
+                        
+                        <td class="border px-4 py-3 text-center font-medium text-green-700 bg-green-50">{{ number_format($stat->api_success_amount, 2) }}</td>
+                        <td class="border px-4 py-3 text-center font-medium text-blue-700 bg-blue-50">{{ number_format($stat->db_success_amount, 2) }}</td>
+                        
+                        <td class="border px-4 py-3 text-center font-bold bg-red-50 {{ $diffAmt != 0 ? 'text-red-600' : 'text-gray-300' }}">
+                            {{ number_format($diffAmt, 2) }}
+                        </td>
+
+                        <td class="border px-4 py-3 text-center">{{ number_format($stat->api_success_count) }}</td>
+                        <td class="border px-4 py-3 text-center">{{ number_format($stat->db_success_count) }}</td>
+                        
+                        <td class="border px-4 py-3 text-center font-bold {{ $diffCnt != 0 ? 'text-red-600' : 'text-gray-300' }}">
+                            {{ number_format($diffCnt) }}
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="8" class="px-4 py-6 text-center text-gray-500">
+                            No recharge stats found for the selected period.
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+                <tfoot class="bg-gray-50 font-semibold">
+            <tr class="border-t">
+                <td class="px-4 py-3">Total</td>
+                <td class="border border-r-1 border-gray-100"></td>
+                <td class="px-4 py-3 text-center font-bold bg-green-50">{{ number_format($totalRechargeApiAmt, 2) }}</td>
+                <td class="px-4 py-3 text-center font-bold bg-blue-50">{{ number_format($totalRechargeDbAmt, 2) }}</td>
+                <td class="px-4 py-3 text-center font-bold bg-red-50 {{ $totalRechargeDiffAmt != 0 ? 'text-red-600' : 'text-gray-300' }}">
+                    {{ number_format($totalRechargeDiffAmt, 2) }}
+                </td>
+                <td class="px-4 py-3 text-center font-bold">{{ number_format($rechargeStats->sum('api_success_count')) }}</td>
+                <td class="px-4 py-3 text-center font-bold">{{ number_format($rechargeStats->sum('db_success_count')) }}</td>
+                <td class="px-4 py-3 text-center font-bold {{ $rechargeStats->sum('api_success_count') != $rechargeStats->sum('db_success_count') ? 'text-red-600' : 'text-gray-300' }}">
+                    {{ number_format($rechargeStats->sum('api_success_count') - $rechargeStats->sum('db_success_count')) }}
+                </td>
+            </tr>
+            </table>
         </div>
     </div>
 
